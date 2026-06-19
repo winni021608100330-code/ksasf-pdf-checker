@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ksasf-pdf-checker-state
+  cancel-in-progress: false
+
 jobs:
   check-pdf:
     runs-on: ubuntu-latest
@@ -15,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -42,10 +48,18 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/processed_pdfs.json
+          git add data/state.json
           if git diff --cached --quiet; then
             echo "No state changes to commit."
           else
             git commit -m "Update processed KSASF PDF state"
-            git push
+            for attempt in 1 2 3; do
+              git pull --rebase origin "$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+              echo "Push failed. Retry $attempt/3 after 5 seconds."
+              sleep 5
+            done
+            exit 1
           fi

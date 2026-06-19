@@ -1,0 +1,51 @@
+name: KSASF PDF Checker
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check-pdf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check KSASF PDFs
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python checker.py
+
+      - name: Upload downloaded PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ksasf-pdfs-${{ github.run_number }}
+          path: data/pdfs/*.pdf
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Save processed PDF state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed_pdfs.json
+          if git diff --cached --quiet; then
+            echo "No state changes to commit."
+          else
+            git commit -m "Update processed KSASF PDF state"
+            git push
+          fi

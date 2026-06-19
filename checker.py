@@ -1,3 +1,9 @@
+TARGET_POST_KEYWORDS = [
+    "본선",
+    "본선진출",
+    "진출팀",
+    "발표"
+]
 from __future__ import annotations
 
 import hashlib
@@ -85,6 +91,8 @@ def links_from_html(html: str, page_url: str) -> tuple[list[PdfLink], list[str]]
     soup = BeautifulSoup(html, "html.parser")
     pdf_links: list[PdfLink] = []
     detail_links: list[str] = []
+    def is_target_post(title: str) -> bool:
+    return any(keyword in title for keyword in TARGET_POST_KEYWORDS)
 
     for anchor in soup.select("a[href]"):
         href = anchor.get("href", "").strip()
@@ -104,27 +112,47 @@ def links_from_html(html: str, page_url: str) -> tuple[list[PdfLink], list[str]]
 
 
 def discover_pdf_links(client: requests.Session, start_url: str) -> list[PdfLink]:
-    start_html = fetch_page(client, start_url)
-    pdf_links, detail_links = links_from_html(start_html, start_url)
 
-    visited = {start_url}
-    for detail_url in detail_links[:MAX_DETAIL_PAGES]:
-        if detail_url in visited:
+    html = fetch_page(client, start_url)
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    pdf_links: list[PdfLink] = []
+
+    for anchor in soup.select("a[href]"):
+
+        text = " ".join(anchor.stripped_strings).strip()
+
+        if not is_target_post(text):
             continue
-        visited.add(detail_url)
+
+        detail_url = urljoin(start_url, anchor.get("href"))
+
+        print(f"Target post found: {text}")
+
         try:
             detail_html = fetch_page(client, detail_url)
-        except requests.RequestException as exc:
-            print(f"Detail page skipped: {detail_url}: {exc}")
+        except Exception:
             continue
-        found, _ = links_from_html(detail_html, detail_url)
-        pdf_links.extend(found)
 
-    unique: dict[str, PdfLink] = {}
-    for item in pdf_links:
-        unique[item.url] = item
-    return list(unique.values())
+        detail_soup = BeautifulSoup(detail_html, "html.parser")
 
+        for pdf_anchor in detail_soup.select("a[href]"):
+
+            href = pdf_anchor.get("href", "")
+
+            if "download.php" in href.lower() or ".pdf" in href.lower():
+
+                pdf_url = urljoin(detail_url, href)
+
+                pdf_links.append(
+                    PdfLink(
+                        pdf_url,
+                        text
+                    )
+                )
+
+    return pdf_links
 
 def download_pdf(client: requests.Session, link: PdfLink) -> tuple[bytes, str]:
     response = client.get(link.url, timeout=REQUEST_TIMEOUT)

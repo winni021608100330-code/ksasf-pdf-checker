@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: ksasf-pdf-checker-state
+  group: ksasf-pdf-checker-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -20,7 +20,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
+
+      - name: Sync latest state
+        run: git pull --rebase origin "$GITHUB_REF_NAME"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -37,41 +41,29 @@ jobs:
         run: python checker.py
 
       - name: Save state.json
+        if: success()
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           if git diff --quiet -- data/state.json; then
             echo "state.json has not changed."
             exit 0
           fi
 
-          cp data/state.json "$RUNNER_TEMP/state.json"
-          git restore data/state.json
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          cp "$RUNNER_TEMP/state.json" data/state.json
-
-          git add data/state.json
-          if git diff --cached --quiet; then
-            echo "No state changes remain after rebase."
-            exit 0
-          fi
-
-          git commit -m "Update KSASF PDF state"
+          CONTENT="$(base64 -w 0 data/state.json)"
 
           for attempt in 1 2 3; do
-            echo "Push attempt $attempt/3"
+            echo "Save attempt $attempt/3"
 
-            if git pull --rebase origin "$GITHUB_REF_NAME"; then
-              if git push origin "HEAD:$GITHUB_REF_NAME"; then
-                echo "state.json saved successfully."
-                exit 0
-              fi
-            else
-              git rebase --abort || true
+            SHA="$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "repos/$GITHUB_REPOSITORY/contents/data/state.json?ref=$GITHUB_REF_NAME" --jq '.sha')"
+
+            if gh api --method PUT -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "repos/$GITHUB_REPOSITORY/contents/data/state.json" -f message="Update KSASF PDF state" -f content="$CONTENT" -f branch="$GITHUB_REF_NAME" -f sha="$SHA"; then
+              echo "state.json saved successfully."
+              exit 0
             fi
 
+            echo "State save conflict. Retrying after 5 seconds."
             sleep 5
           done
 

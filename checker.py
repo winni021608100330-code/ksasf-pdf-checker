@@ -226,9 +226,28 @@ def process_pdf(
 
     text, page_count = extract_pdf_text(content)
     matched = find_keywords(text)
-    message = result_message(link, matched, page_count)
+
+if matched:
+    message = (
+        "🎉 KSASF 본선 진출팀 PDF에서 연구 제목 발견!\n\n"
+        f"제목: {link.title}\n"
+        f"시간: {now_text()}\n"
+        f"페이지 수: {page_count}\n"
+        f"발견 키워드: {', '.join(matched)}\n"
+        f"PDF: {link.url}"
+    )
+
     send_telegram_message(message)
-    send_telegram_pdf(pdf_path, f"{link.title} | {', '.join(matched) if matched else '키워드 없음'}")
+
+    send_telegram_pdf(
+        pdf_path,
+        f"🎉 연구 제목 발견! {', '.join(matched)}"
+    )
+
+    print(f"FOUND: {matched}")
+
+else:
+    print(f"SKIP: {link.title}")
 
     processed[link.url] = {
         "sha256": digest,

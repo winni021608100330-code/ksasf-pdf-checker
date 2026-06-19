@@ -1,1 +1,100 @@
-{}
+{
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20160810073649_1.pdf&realname=최종_업로드.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:55 UTC",
+    "local_file": "data/pdfs/download.php_26ab98f14a87.pdf",
+    "matched_keywords": "",
+    "sha256": "26ab98f14a87525650d5bcd94d059ee296c7572ae0ebdf21ae2463e54e3eb246",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20160811115030_1.pdf&realname=day4-2.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:46 UTC",
+    "local_file": "data/pdfs/download.php_c644e2cb2688.pdf",
+    "matched_keywords": "",
+    "sha256": "c644e2cb26889a5f66921725712984851f52cbb4283ec113feaded6180e30ac0",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20180807090350_1.pdf&realname=KSASF 2018 뉴스레터 1일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:38 UTC",
+    "local_file": "data/pdfs/download.php_72cb3e4a3489.pdf",
+    "matched_keywords": "",
+    "sha256": "72cb3e4a348998e7b272de720d01a750663964e80d7ce8072f0ed512b62d4eec",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20180808111835_1.pdf&realname=KSASF 2018 뉴스레터 2일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:32 UTC",
+    "local_file": "data/pdfs/download.php_2b016d41963c.pdf",
+    "matched_keywords": "",
+    "sha256": "2b016d41963c477ab667f1b391a03268bc5a0a9ace58289ef852aba27dc73e4a",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20180809142821_1.pdf&realname=KSASF 2018 뉴스레터 3일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:25 UTC",
+    "local_file": "data/pdfs/download.php_7fc17ea092ed.pdf",
+    "matched_keywords": "",
+    "sha256": "7fc17ea092ed9951a93c92b28c79d5ece1047cfa0e4d3ca5b6561b28780c5f25",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20220811225248_1.pdf&realname=2022 KSASF 뉴스레터 1일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:20 UTC",
+    "local_file": "data/pdfs/download.php_5180cc7291ab.pdf",
+    "matched_keywords": "",
+    "sha256": "5180cc7291ab39b571c70dcfe88ae47d2546a5f7810231d37d6033ca929a5b1d",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20220812073556_1.pdf&realname=2022 KSASF 뉴스레터 2일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:15 UTC",
+    "local_file": "data/pdfs/download.php_9b05e16b9075.pdf",
+    "matched_keywords": "",
+    "sha256": "9b05e16b907500ffa84d60d4922510fc7776895556737c3ba1ddfaf08f7a5b9e",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20240628151554_1.pdf&realname=KSASF 2024 과학에세이 본선 진출자 명단.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:41:46 UTC",
+    "local_file": "data/pdfs/download.php_e26810aa61d6.pdf",
+    "matched_keywords": "",
+    "sha256": "e26810aa61d6078eb45411c20f05038b11e803ec5c8d89a3c71b231356361072",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20240806073046_1.pdf&realname=KSASF 2024 뉴스레터 1일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:11 UTC",
+    "local_file": "data/pdfs/download.php_63305252c737.pdf",
+    "matched_keywords": "",
+    "sha256": "63305252c737fcd53dc8470b821cfdee5c0cd565d2d2c715de9d0862364ddf09",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20240807142715_1.pdf&realname=KSASF 2024 뉴스레터 2일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:06 UTC",
+    "local_file": "data/pdfs/download.php_2f01e815aa51.pdf",
+    "matched_keywords": "",
+    "sha256": "2f01e815aa51a29f442e9fe59750f383cf678225d54c80ca603881e778b4d2c5",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20240808140809_1.pdf&realname=KSASF 2024 뉴스레터 3일차.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:42:03 UTC",
+    "local_file": "data/pdfs/download.php_d286d5883cb0.pdf",
+    "matched_keywords": "",
+    "sha256": "d286d5883cb067eb4837e663fa585b1bd1c56b481ec8f81515cdc9945f46e5ba",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20240809114125_1.pdf&realname=분실물.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:41:58 UTC",
+    "local_file": "data/pdfs/download.php_59bacbab9b87.pdf",
+    "matched_keywords": "",
+    "sha256": "59bacbab9b87bde9321877283a06a7080f84286c9a1ea80e36441c424a2e0a2e",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=20260416080440_1.pdf&realname=KSASF 2026 개최 안내문_공식.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:41:50 UTC",
+    "local_file": "data/pdfs/download.php_5a3f3c0408e6.pdf",
+    "matched_keywords": "",
+    "sha256": "5a3f3c0408e6dd925847093d19a6dfa827c31a26a693113c349c75ba78cf3707",
+    "title": "download.php"
+  },
+  "https://ksasf.ksa.hs.kr/download.php?path=board&savename=_20240614115915_1.pdf&realname=KSASF 2024 연구발표 본선 진출팀 명단.pdf&language=KR": {
+    "checked_at": "2026-06-19 08:41:43 UTC",
+    "local_file": "data/pdfs/download.php_e1e8f0c7a4d8.pdf",
+    "matched_keywords": "",
+    "sha256": "e1e8f0c7a4d8917cd2ce8fde685fbc6202d609ce460e51458f322acff65db13f",
+    "title": "download.php"
+  }
+}

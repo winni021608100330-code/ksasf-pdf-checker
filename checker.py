@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
-import re
-from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import unquote, urljoin
@@ -15,21 +14,16 @@ from pypdf import PdfReader
 
 BOARD_URL = "https://ksasf.ksa.hs.kr/?action=BD0000M&pagecode=P000000023&language=KR"
 POST_KEYWORDS = ("본선", "본선진출", "진출팀", "발표")
-TARGET_TITLE = (
-    "혹등고래 버블넷(Bubble-Net)에서 착안한 나선형 노즐의 회전 상승 흐름을 이용한 "
-    "가라앉은 미세플라스틱(PVC) 포집 효과 탐구"
-)
-
-ROOT = Path(__file__).resolve().parent
-STATE_FILE = ROOT / "data" / "state.json"
-PDF_FILE = ROOT / "data" / "matched.pdf"
+SEARCH_TEXT = "버블넷"
+STATE_FILE = Path(__file__).resolve().parent / "data" / "state.json"
 TIMEOUT = 30
 
 
 def load_state() -> dict:
     if not STATE_FILE.exists():
-        return {"processed_posts": []}
-    return json.loads(STATE_FILE.read_text(encoding="utf-8-sig"))
+        return {"processed_pdfs": {}}
+    state = json.loads(STATE_FILE.read_text(encoding="utf-8-sig"))
+    return {"processed_pdfs": state.get("processed_pdfs", {})}
 
 
 def save_state(state: dict) -> None:
@@ -37,72 +31,65 @@ def save_state(state: dict) -> None:
     STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def get_html(session: requests.Session, url: str) -> str:
-    response = session.get(url, timeout=TIMEOUT)
+def get(session: requests.Session, url: str, referer: str | None = None) -> requests.Response:
+    headers = {"Referer": referer} if referer else None
+    response = session.get(url, headers=headers, timeout=TIMEOUT)
     response.raise_for_status()
+    return response
+
+
+def latest_post(session: requests.Session) -> tuple[str, str]:
+    response = get(session, BOARD_URL)
     response.encoding = response.apparent_encoding or response.encoding
-    return response.text
-
-
-def find_latest_target_post(session: requests.Session) -> tuple[str, str] | None:
-    soup = BeautifulSoup(get_html(session, BOARD_URL), "html.parser")
-    candidates: list[tuple[int, str, str]] = []
+    soup = BeautifulSoup(response.text, "html.parser")
+    posts: list[tuple[int, str, str]] = []
 
     for row in soup.select("table tbody tr"):
         link = row.select_one("a[href]")
         number = next((int(value) for value in row.stripped_strings if value.isdigit()), None)
-        if not link or number is None:
-            continue
+        if link and number is not None:
+            title = link.get_text(" ", strip=True)
+            if title:
+                posts.append((number, title, urljoin(BOARD_URL, link["href"])))
 
-        title = link.get_text(" ", strip=True)
-        years = [int(year) for year in re.findall(r"20\d{2}", row.get_text(" ", strip=True))]
-        is_current = not years or max(years) >= datetime.now().year
-        if is_current and title and any(keyword in title for keyword in POST_KEYWORDS):
-            candidates.append((number, title, urljoin(BOARD_URL, link["href"])))
+    if not posts:
+        raise RuntimeError("최신 게시글을 찾지 못했습니다.")
 
-    if not candidates:
-        return None
-
-    _, title, post_url = max(candidates, key=lambda item: item[0])
+    _, title, post_url = max(posts, key=lambda item: item[0])
     return title, post_url
 
 
-def find_attached_pdfs(session: requests.Session, post_url: str) -> list[str]:
-    soup = BeautifulSoup(get_html(session, post_url), "html.parser")
-    pdf_urls: list[str] = []
+def attached_pdf_urls(session: requests.Session, post_url: str) -> list[str]:
+    response = get(session, post_url)
+    response.encoding = response.apparent_encoding or response.encoding
+    soup = BeautifulSoup(response.text, "html.parser")
+    urls: list[str] = []
 
     for link in soup.select("a[href]"):
         href = link["href"].strip()
         label = link.get_text(" ", strip=True)
         if ".pdf" in unquote(f"{href} {label}").lower():
             pdf_url = urljoin(post_url, href)
-            if pdf_url not in pdf_urls:
-                pdf_urls.append(pdf_url)
+            if pdf_url not in urls:
+                urls.append(pdf_url)
 
-    return pdf_urls
-
-
-def download_pdf(session: requests.Session, pdf_url: str, post_url: str) -> bytes | None:
-    response = session.get(pdf_url, headers={"Referer": post_url}, timeout=TIMEOUT)
-    response.raise_for_status()
-    return response.content if response.content.startswith(b"%PDF") else None
+    return urls
 
 
-def contains_target_title(pdf: bytes) -> bool:
+def extract_text(pdf: bytes) -> str:
     reader = PdfReader(BytesIO(pdf))
-    text = "\n".join(page.extract_text() or "" for page in reader.pages)
-    normalized_text = "".join(text.split()).casefold()
-    normalized_target = "".join(TARGET_TITLE.split()).casefold()
-    return normalized_target in normalized_text
+    return "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
-def send_telegram(title: str, post_url: str, pdf_url: str, pdf: bytes) -> None:
+def send_telegram(title: str, post_url: str, pdf_url: str, found: bool) -> None:
     token = os.environ["TELEGRAM_BOT_TOKEN"]
     chat_id = os.environ["TELEGRAM_CHAT_ID"]
+    result = "발견됨" if found else "발견되지 않음"
     message = (
-        "✅ KSASF 연구 제목 발견\n\n"
+        "KSASF PDF 검색 결과\n\n"
         f"게시글: {title}\n"
-        f"연구 제목: {TARGET_TITLE}\n"
+        f"검색어: {SEARCH_TEXT}\n"
+        f"결과: {result}\n"
         f"게시글 URL: {post_url}\n"
         f"PDF URL: {pdf_url}"
     )
@@ -113,45 +100,39 @@ def send_telegram(title: str, post_url: str, pdf_url: str, pdf: bytes) -> None:
         timeout=TIMEOUT,
     ).raise_for_status()
 
-    PDF_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PDF_FILE.write_bytes(pdf)
-    with PDF_FILE.open("rb") as file:
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendDocument",
-            data={"chat_id": chat_id, "caption": title},
-            files={"document": ("ksasf-result.pdf", file, "application/pdf")},
-            timeout=60,
-        ).raise_for_status()
-
 
 def main() -> None:
     session = requests.Session()
     session.headers["User-Agent"] = "Mozilla/5.0 (compatible; KSASF-PDF-Checker/1.0)"
     state = load_state()
-    processed = set(state.get("processed_posts", []))
+    processed = state["processed_pdfs"]
 
-    post = find_latest_target_post(session)
-    if not post:
-        print("조건에 맞는 게시글이 없습니다.")
+    title, post_url = latest_post(session)
+    print(f"게시글 발견: {title}")
+
+    if not any(keyword in title for keyword in POST_KEYWORDS):
         return
 
-    title, post_url = post
-    if post_url in processed:
-        print("이미 처리한 게시글입니다.")
-        return
+    for pdf_url in attached_pdf_urls(session, post_url):
+        print(f"첨부 PDF 발견: {pdf_url}")
+        response = get(session, pdf_url, post_url)
+        pdf = response.content
+        if not pdf.startswith(b"%PDF"):
+            continue
 
-    print(f"처리 대상 게시글: {title}")
-    for pdf_url in find_attached_pdfs(session, post_url):
-        pdf = download_pdf(session, pdf_url, post_url)
-        if pdf and contains_target_title(pdf):
-            send_telegram(title, post_url, pdf_url, pdf)
-            print("연구 제목 발견: Telegram 전송 완료")
-            break
-    else:
-        print("연구 제목을 찾지 못해 전송하지 않았습니다.")
+        sha256 = hashlib.sha256(pdf).hexdigest()
+        if processed.get(pdf_url) == sha256 or sha256 in processed.values():
+            processed[pdf_url] = sha256
+            continue
 
-    processed.add(post_url)
-    state["processed_posts"] = sorted(processed)
+        print(f"PDF 변경 감지: {sha256}")
+        found = SEARCH_TEXT.casefold() in extract_text(pdf).casefold()
+        print(f"연구 제목 발견: {'예' if found else '아니오'}")
+
+        send_telegram(title, post_url, pdf_url, found)
+        print("Telegram 전송 완료: 성공")
+        processed[pdf_url] = sha256
+
     save_state(state)
 
 

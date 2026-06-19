@@ -30,36 +30,50 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Check KSASF PDFs
+      - name: Check KSASF PDF
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python checker.py
 
-      - name: Upload downloaded PDFs
-        uses: actions/upload-artifact@v4
-        with:
-          name: ksasf-pdfs-${{ github.run_number }}
-          path: data/pdfs/*.pdf
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Save processed PDF state
+      - name: Save state.json
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- data/state.json; then
+            echo "state.json has not changed."
+            exit 0
+          fi
+
+          cp data/state.json "$RUNNER_TEMP/state.json"
+          git restore data/state.json
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          cp "$RUNNER_TEMP/state.json" data/state.json
+
           git add data/state.json
           if git diff --cached --quiet; then
-            echo "No state changes to commit."
-          else
-            git commit -m "Update processed KSASF PDF state"
-            for attempt in 1 2 3; do
-              git pull --rebase origin "$GITHUB_REF_NAME"
+            echo "No state changes remain after rebase."
+            exit 0
+          fi
+
+          git commit -m "Update KSASF PDF state"
+
+          for attempt in 1 2 3; do
+            echo "Push attempt $attempt/3"
+
+            if git pull --rebase origin "$GITHUB_REF_NAME"; then
               if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                echo "state.json saved successfully."
                 exit 0
               fi
-              echo "Push failed. Retry $attempt/3 after 5 seconds."
-              sleep 5
-            done
-            exit 1
-          fi
+            else
+              git rebase --abort || true
+            fi
+
+            sleep 5
+          done
+
+          echo "Failed to save state.json after 3 attempts."
+          exit 1
